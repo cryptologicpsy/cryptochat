@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Chat Application</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #chatbox { width: 100%; max-width: 600px; margin: auto; border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll; margin-bottom: 20px; }
+        #messageInput { width: calc(100% - 60px); margin-right: 10px; }
+        #sendButton { width: 50px; }
+        .message { padding: 5px; margin: 2px 0; border-radius: 5px; }
+        .message { background-color: #e0f7fa; text-align: left; }
+        .key-container { margin-bottom: 20px; }
+        #keyDisplay { margin-bottom: 10px; }
+        #logDisplay { max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+
+<h2>CryptoChat Application with E2E Encryption</h2>
+
+<div class="key-container">
+    <h3>Generate Key Pair</h3>
+    <button id="generateKeysButton">Generate Keys</button>
+    <div id="keyDisplay"></div>
+</div>
+
+<div class="key-container">
+    <h3>Public Key for Encryption</h3>
+    <input type="text" id="recipientPublicKey" placeholder="Recipient Public Key" />
+</div>
+
+<div id="chatbox"></div>
+<input type="text" id="messageInput" placeholder="Type a message..." />
+<button id="sendButton">Send</button>
+
+<div id="logDisplay"></div>
+
+<script src="https://cdn.jsdelivr.net/sockjs/1.1.4/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.0.0/jsencrypt.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<script>
+    const socket = new SockJS('/chat-websocket');
+    const stompClient = Stomp.over(socket);
+
+    const chatbox = document.getElementById('chatbox');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const recipientPublicKeyInput = document.getElementById('recipientPublicKey');
+    const keyDisplay = document.getElementById('keyDisplay');
+    const logDisplay = document.getElementById('logDisplay');
+
+    let privateKey;
+    let publicKey;
+
+    // Log messages to the display
+    function log(message) {
+        const logElement = document.createElement('div');
+        logElement.innerText = message;
+        logDisplay.appendChild(logElement);
+        logDisplay.scrollTop = logDisplay.scrollHeight;
+    }
+
+    // Generate public and private key pair
+    function generateKeys() {
+        const encryptor = new JSEncrypt();
+        encryptor.getKey();
+        publicKey = encryptor.getPublicKey();
+        privateKey = encryptor.getPrivateKey();
+        keyDisplay.innerHTML = `<p>Public Key: ${publicKey}</p><p>Private Key: ${privateKey}</p>`;
+        log(`Generated keys.`);
+    }
+
+    document.getElementById('generateKeysButton').onclick = () => generateKeys();
+
+    // Automatically connect to the server
+    stompClient.connect({}, function (frame) {
+        log('Connected: ' + frame);
+
+        // Subscribe to messages
+        stompClient.subscribe('/topic/public', function (chatMessage) {
+            const message = JSON.parse(chatMessage.body);
+            const decryptedMessage = decryptMessage(message.content);
+            displayMessage(decryptedMessage);
+            log(`Received message: ${decryptedMessage}`);
+        });
+    });
+
+    // Send encrypted message
+    sendButton.onclick = () => {
+        const messageContent = messageInput.value;
+        const recipientPublicKey = recipientPublicKeyInput.value;
+
+        if (!recipientPublicKey) {
+            log('Please enter a recipient public key.');
+            return;
+        }
+
+        const encryptedMessage = encryptMessage(messageContent, recipientPublicKey);
+        sendMessage(encryptedMessage);
+        log(`Sent encrypted message: ${encryptedMessage}`);
+        messageInput.value = '';
+    };
+
+    // Display message in the chatbox
+    function displayMessage(messageContent) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+        messageElement.innerText = messageContent;
+        chatbox.appendChild(messageElement);
+        chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    // Send message to the server
+    function sendMessage(content) {
+        stompClient.send("/app/chat", {}, JSON.stringify({ content }));
+    }
+
+    // Encrypt message with the recipient's public key
+    function encryptMessage(message, recipientPublicKey) {
+        const encryptor = new JSEncrypt();
+        encryptor.setPublicKey(recipientPublicKey);
+        const encrypted = encryptor.encrypt(message);
+        return encrypted || message;  // If encryption fails, return the original
+    }
+
+    // Decrypt message with the private key
+    function decryptMessage(encryptedMessage) {
+        const decryptor = new JSEncrypt();
+        decryptor.setPrivateKey(privateKey);
+        const decrypted = decryptor.decrypt(encryptedMessage);
+        return decrypted || 'Decryption failed';
+    }
+</script>
+
+</body>
+</html>

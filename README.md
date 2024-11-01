@@ -33,3 +33,69 @@ The Secure Chat Application is a web-based chat application that ensures end-to-
 - **Backend**:
   - **Spring Boot**: For building the backend server.
   - **WebSocket**: For real-time communication between clients.
+
+
+The following instructions describe how to install the necessary tools, run the application, and access it once it's running.
+
+## Prerequisites
+
+- Java Development Kit (JDK) 11 or newer
+- Gradle 
+
+## Installation
+
+### 1. Install the JDK
+
+To run the project, you need the JDK. Follow these steps to install the JDK on a Linux distribution:
+
+1. Update your package list:
+   
+   sudo apt update
+
+2. Install OpenJDK 11 (or a newer version):
+
+   sudo apt install openjdk-11-jdk
+
+### 2. Install Gradle
+
+  sudo apt install gradle
+
+Note: This project also includes the Gradle wrapper (gradlew), so you can run the application without installing Gradle system-wide. Just use ./gradlew instead of gradle in the following commands if you prefer using the wrapper.
+
+### Running the Project
+
+To start the Spring Boot server, follow these steps:
+
+1. Navigate to the project directory:
+
+   cd /path/to/your/project
+
+2. Run the application with Gradle:
+
+   ./gradlew bootRun
+
+or, if Gradle is installed system-wide: 
+  
+  gradle bootRun 
+
+
+Accessing the Application
+
+Once the server is running, you can open a browser and go to the following address to access the application:
+
+  http://localhost:8080
+
+
+Important Note on Using the Generate Keys Feature
+
+When using the Generate Keys feature:
+
+  After pressing the "Generate Keys" button, you’ll need to enter the Recipient Public Key.
+
+  Make sure to provide the public key in the full required format, including both the header and footer. For example:
+
+-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGdfSIb3DdfEBAQUAA4GNADCBiQKBgQCGoJjiedqR/w1io7o/oBfIq435-----END PUBLIC KEY-----
+
+
+###########################

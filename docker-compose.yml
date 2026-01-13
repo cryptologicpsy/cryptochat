@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  cryptochat:
+    image: cryptochat:1.0
+    container_name: cryptochat
+    ports:
+      - "10.0.0.1:8080:8080"
+    restart: unless-stopped

@@ -13,35 +13,23 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Set up Java for Gradle
-      - name: Set up Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      # 3️⃣ Build jar with Gradle
-      - name: Build jar
-        run: ./gradlew clean build
-
-      # 4️⃣ Show Docker version (debug)
-      - name: Docker version
+      - name: Show Docker version
         run: docker --version
 
-      # 5️⃣ Build Docker image locally
-      - name: Build Docker image
-        run: docker-compose build
+      - name: Show Docker Compose version
+        run: docker-compose --version
 
-      # 6️⃣ Stop any running containers, then start new ones
-      - name: Restart containers
-        run: |
-          docker-compose down
-          docker-compose up -d
+      - name: Build with Gradle
+        run: ./gradlew clean build
 
-      # 7️⃣ Show running containers (debug)
+      - name: Stop old containers
+        run: docker-compose down
+
+      - name: Build and start containers
+        run: docker-compose up -d --build
+
       - name: Show running containers
         run: docker ps

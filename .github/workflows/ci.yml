@@ -13,14 +13,28 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      # Κάνουμε checkout τον κώδικα
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Δείχνουμε την έκδοση του docker-compose
       - name: Show Docker Compose version
         run: docker-compose --version
 
-      - name: Build and start containers
-        run: docker-compose up -d --build
+      # Κάνουμε redeploy: κατεβάζουμε παλιό container, κάνουμε rebuild και ξεκινάμε νέο
+      - name: Rebuild and start containers
+        run: |
+          docker-compose down
+          docker-compose up -d --build
 
+      # Δείχνουμε τα τρέχοντα containers για επιβεβαίωση
       - name: Show running containers
         run: docker ps
+
+
+
+
+
+
+
+

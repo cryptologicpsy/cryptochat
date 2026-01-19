@@ -1,103 +1,255 @@
-# CryptoChat Application
+# 🔐 Signal Protocol E2E Chat
 
-## Overview
+A demonstration of **true end-to-end encryption** using the Signal Protocol, built with Spring Boot and vanilla JavaScript.
 
-The Secure Chat Application is a web-based chat application that ensures end-to-end encryption, meaning that the server does not have access to any messages exchanged between clients. This is achieved using asymmetric RSA encryption, where each client generates a pair of cryptographic keys: a public key for encryption and a private key for decryption. The backend server is implemented using Spring Boot with WebSocket, serving solely as a mediator for message transmission.
+![Security](https://img.shields.io/badge/security-E2E%20encrypted-green)
+![Protocol](https://img.shields.io/badge/protocol-Signal-blue)
+![Backend](https://img.shields.io/badge/backend-Spring%20Boot-brightgreen)
+![Frontend](https://img.shields.io/badge/frontend-Vanilla%20JS-yellow)
 
-## Features
+##  Features
 
-- **End-to-End Encryption**: Messages are encrypted on the client side before being sent to the server, ensuring that only the intended recipient can decrypt and read the messages.
-- **Asymmetric RSA Algorithm**: Each client generates a pair of keys (public and private). Public keys are exchanged for encryption purposes, while private keys remain confidential.
-- **Spring Boot Backend**: The backend server operates with Spring Boot and WebSocket, functioning only as a message broker.
-- **User-Friendly Interface**: A simple and clean user interface that allows users to send and receive messages easily.
+- **True End-to-End Encryption** - Server cannot decrypt messages
+- **Signal Protocol** - Industry-standard Double Ratchet Algorithm
+- **Forward Secrecy** - Past messages remain secure even if keys are compromised
+- **Post-Compromise Security** - Future messages secure after compromise
+- **Real-time Messaging** - WebSocket (STOMP) for instant delivery
+- **Client-Side Cryptography** - All keys generated in the browser
 
-## How It Works
+##  Architecture
 
-1. **Key Generation**: Each client generates their own pair of cryptographic keys (public and private) upon clicking the "Generate Keys" button.
-2. **Public Key Exchange**: Clients can enter the recipient's public key to send encrypted messages.
-3. **Message Encryption**: When a message is sent, it is encrypted using the recipient's public key.
-4. **Message Transmission**: The encrypted message is sent to the Spring Boot backend server, which forwards it to the intended recipient without decrypting it.
-5. **Message Decryption**: Upon receiving a message, the recipient uses their private key to decrypt the message and read its content.
-6. **Message Logging**: The application logs all sent and received messages for the user's reference.
+```
+┌─────────────────┐                    ┌──────────────────┐
+│   Browser A     │                    │    Browser B     │
+│  ┌───────────┐  │                    │  ┌────────────┐  │
+│  │ libsignal │  │                    │  │ libsignal  │  │
+│  │  Protocol │  │                    │  │  Protocol  │  │
+│  └─────┬─────┘  │                    │  └─────┬──────┘  │
+│        │        │                    │        │         │
+│   [Encrypt]     │                    │   [Decrypt]      │
+└────────┼────────┘                    └────────┼─────────┘
+         │                                      │
+         │        ┌──────────────────┐          │
+         └───────>│  Spring Boot     │<─────────┘
+                  │  (Message Relay) │
+                  │                  │
+                  │  ❌ Can't decrypt│
+                  └────────┬─────────┘
+                           │
+                  ┌────────▼─────────┐
+                  │      Redis       │
+                  │  - User Data     │
+                  │  - PreKey Bundles│
+                  └──────────────────┘
+```
 
-## Technologies Used
+##  Tech Stack
 
-- **Frontend**: 
-  - **HTML/CSS**: For the structure and styling of the application.
-  - **JavaScript**: For client-side functionality and cryptographic operations.
-  - **SockJS**: For WebSocket communication.
-  - **STOMP**: For messaging protocol.
-  - **JSEncrypt**: For RSA encryption and decryption.
-  - **CryptoJS**: For additional cryptographic functionalities.
+**Backend:**
+- Spring Boot 
+- Spring WebSocket (STOMP)
+- Redis (Session & Key storage)
+- Rate Limiting (Redis-based)
 
-- **Backend**:
-  - **Spring Boot**: For building the backend server.
-  - **WebSocket**: For real-time communication between clients.
+**Frontend:**
+- Vanilla JavaScript
+- libsignal-protocol.js
+- SockJS + STOMP
+- localStorage (key persistence)
+
+**Cryptography:**
+- **Signal Protocol** (Double Ratchet Algorithm)
+- **Curve25519** (ECDH key agreement)
+- **AES-256-CBC** (Symmetric encryption)
+- **HMAC-SHA256** (Message authentication)
+
+##  Getting Started
+
+### Prerequisites
+
+- Java 17+
+- Redis server
+- Modern web browser
+
+### Installation
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/cryptologicpsy/cryptochat.git
+```
+
+2. **Start Redis**
+```bash
+redis-server
+```
+
+3. **Run the application**
+```bash
+./mvnw spring-boot:run
+```
+
+4. **Open in browser**
+```
+http://localhost:8080
+```
+
+## 📖 How It Works
+
+### 1. User Registration
+```javascript
+// Client-side key generation
+- Generate Identity Key Pair (Curve25519)
+- Generate Signed PreKey + Signature
+- Generate One-Time PreKey
+
+// Upload ONLY public keys to server
+- Server stores PreKeyBundle in Redis
+- Private keys NEVER leave the browser
+```
+
+### 2. Session Establishment (X3DH)
+```javascript
+// Alice wants to message Bob
+1. Fetch Bob's PreKeyBundle from server
+2. Verify signature on Signed PreKey
+3. Perform Triple Diffie-Hellman (X3DH)
+4. Derive shared secret
+5. Initialize Double Ratchet
+```
+
+### 3. Message Exchange
+```javascript
+// Encryption (Alice)
+1. Get current chain key from Double Ratchet
+2. Derive message key
+3. Encrypt with AES-256-CBC
+4. Compute HMAC-SHA256
+5. Send ciphertext via WebSocket
+
+// Relay (Server)
+- Forwards encrypted message
+- CANNOT decrypt (doesn't have keys)
+
+// Decryption (Bob)
+1. Receive ciphertext
+2. Verify HMAC
+3. Decrypt with AES-256-CBC
+4. Advance Double Ratchet
+```
+Each message derives a unique one-time message key from the current chain key
+using a one-way key derivation function (KDF). After encryption, the chain key
+is advanced and the message key is immediately discarded. This guarantees
+forward secrecy at the message level, even within an established session.
+
+## 🔒 Security Features
+
+### ✅ What's Secure
+
+- **E2E Encryption** - Server is untrusted, cannot read messages
+- **Forward Secrecy** - Compromise today doesn't reveal past messages
+- **Post-Compromise Security** - Self-healing after key compromise
+- **Authentication** - Identity keys prevent impersonation
+- **Deniability** - MACs instead of signatures
+- **Client-Side Keys** - All cryptographic keys generated in browser
 
 
-The following instructions describe how to install the necessary tools, run the application, and access it once it's running.
+### Planned Improvements
 
-## Prerequisites
+- ** localStorage Encryption** - Encrypt keys at rest with password-derived key
+- ** Message History** - Encrypted message storage
+- ** Delivery Receipts** - Message delivery confirmation
+- ** Multi-Device** - Support multiple devices per user
+- ** Session Backup** - Encrypted session backup to server
 
-- Java Development Kit (JDK) 11 or newer
-- Gradle 
+```
 
-## Installation
+## 🔬 API Endpoints
 
-### 1. Install the JDK
+### User Management
+```
+POST   /api/users/register          # Register new user
+GET    /api/users/{userId}          # Get user info
+PUT    /api/users/{userId}/online   # Update online status
+```
 
-To run the project, you need the JDK. Follow these steps to install the JDK on a Linux distribution:
+### Key Management
+```
+POST   /api/keys/{userId}/upload    # Upload PreKeyBundle
+GET    /api/keys/{userId}/bundle    # Fetch PreKeyBundle
+DELETE /api/keys/{userId}/bundle    # Delete PreKeyBundle
+```
 
-1. Update your package list:
-   
-   sudo apt update
+### Messaging (WebSocket)
+```
+CONNECT    /chat-websocket          # Establish WebSocket
+SUBSCRIBE  /topic/user/{userId}     # Listen for messages
+SEND       /app/chat.send            # Send encrypted message
+```
 
-2. Install OpenJDK 11 (or a newer version):
+## 🧪 Testing
 
-   sudo apt install openjdk-11-jdk
+Open two browser windows:
 
-### 2. Install Gradle
+1. **Window 1 (Alice)**
+   - Register as "alice"
+   - Copy User ID
 
-  sudo apt install gradle
+2. **Window 2 (Bob)**
+   - Register as "bob"
+   - Copy User ID
 
-Note: This project also includes the Gradle wrapper (gradlew), so you can run the application without installing Gradle system-wide. Just use ./gradlew instead of gradle in the following commands if you prefer using the wrapper.
+3. **Alice → Bob**
+   - Paste Bob's User ID
+   - Click "Connect to Recipient"
+   - Type message → Send
 
-### Running the Project
-
-To start the Spring Boot server, follow these steps:
-
-1. Navigate to the project directory:
-
-   cd /path/to/your/project
-
-2. Run the application with Gradle:
-
-   ./gradlew bootRun
-
-or, if Gradle is installed system-wide: 
-  
-  gradle bootRun 
-
-
-Accessing the Application
-
-Once the server is running, you can open a browser and go to the following address to access the application:
-
-  http://localhost:8080
-
-
-Important Note on Using the Generate Keys Feature
-
-When using the Generate Keys feature:
-
-  After pressing the "Generate Keys" button, you’ll need to enter the Recipient Public Key.
-
-  Make sure to provide the public key in the full required format, including both the header and footer. For example:
-
------BEGIN PUBLIC KEY-----
-MIGfMA0GCSqGdfSIb3DdfEBAQUAA4GNADCBiQKBgQCGoJjiedqR/w1io7o/oBfIq435-----END PUBLIC KEY-----
+4. **Verify**
+   - Bob receives decrypted message
+   - Check browser console for encryption logs
+   - Check server logs - server sees only ciphertext
 
 
-###########################
-# Test Workflow
-# Test push
+## 📚 Learn More
+
+### Signal Protocol
+- [Signal Protocol Specification](https://signal.org/docs/)
+- [X3DH Key Agreement](https://signal.org/docs/specifications/x3dh/)
+- [Double Ratchet Algorithm](https://signal.org/docs/specifications/doubleratchet/)
+
+### Libraries
+- [libsignal-protocol-javascript](https://github.com/signalapp/libsignal-protocol-javascript)
+- [Spring WebSocket Documentation](https://docs.spring.io/spring-framework/reference/web/websocket.html)
+
+
+## ⚠️ Disclaimer
+
+This is a **demonstration project** for educational purposes. It showcases how the Signal Protocol works but is **NOT production-ready**. Do not use for sensitive communications without implementing proper:
+
+- User authentication & authorization
+- CORS security
+- localStorage encryption
+- Input validation & sanitization
+- Rate limiting hardening
+- Comprehensive error handling
+- Security auditing
+
+## 🤝 Contributing
+
+Contributions are welcome! Areas needing improvement:
+
+1. User authentication system
+2. localStorage encryption implementation
+3. Message history with encryption
+4. Multi-device support
+5. Group chat functionality
+6. Comprehensive testing
+
+## 👨‍💻 Author
+
+**Cryptologic** - [GitHub Profile](https://github.com/cryptologicpsy)
+
+---
+
+⭐ **Star this repo** if you found it helpful for learning about E2E encryption!
+
+🔒 **Remember:** True privacy means the server can't read your messages. This app demonstrates that principle.

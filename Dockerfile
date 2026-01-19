@@ -1,13 +1,11 @@
 FROM eclipse-temurin:17-jdk
-
 WORKDIR /app
 
-# Αντιγράφουμε όλα τα JARs στον φάκελο /app
+# Αντιγράφουμε όλα τα JARs
 COPY build/libs/ /app/
 
-# Μετονομάζουμε το JAR σε crypto.jar μέσα στο container
-RUN mv /app/*.jar /app/crypto.jar
+# Παίρνουμε μόνο το JAR που δεν έχει -plain
+RUN sh -c 'mv /app/*SIGNAL.jar /app/crypto.jar'
 
 EXPOSE 8080
-
 ENTRYPOINT ["java", "-jar", "/app/crypto.jar"]

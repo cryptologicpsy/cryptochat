@@ -3,487 +3,1026 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Chat Application</title>
+    <title>Signal Protocol E2E Chat</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+    body {
+        font-family: 'Courier New', 'Consolas', monospace;
+        background: #0a0e27;
+        background-image: 
+            linear-gradient(0deg, transparent 24%, rgba(0, 255, 0, 0.05) 25%, rgba(0, 255, 0, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 255, 0, 0.05) 75%, rgba(0, 255, 0, 0.05) 76%, transparent 77%, transparent),
+            linear-gradient(90deg, transparent 24%, rgba(0, 255, 0, 0.05) 25%, rgba(0, 255, 0, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 255, 0, 0.05) 75%, rgba(0, 255, 0, 0.05) 76%, transparent 77%, transparent);
+        background-size: 50px 50px;
+        min-height: 100vh;
+        padding: 20px;
+        color: #00ff00;
+        padding-bottom: 80px;
+    }
 
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 900px;
-            width: 100%;
-            padding: 40px;
-            backdrop-filter: blur(10px);
-        }
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: rgba(10, 14, 39, 0.95);
+        border-radius: 0;
+        padding: 30px;
+        box-shadow: 0 0 50px rgba(0, 255, 0, 0.3), inset 0 0 30px rgba(0, 255, 0, 0.05);
+        border: 2px solid #00ff00;
+        position: relative;
+    }
 
-        h2 {
-            color: #2d3748;
-            font-size: 28px;
-            margin-bottom: 30px;
-            text-align: center;
-            font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
+    .container::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(45deg, #00ff00, #00aa00, #00ff00);
+        z-index: -1;
+        filter: blur(10px);
+        opacity: 0.3;
+    }
 
-        .encryption-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 6px 14px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-            -webkit-background-clip: initial;
-            -webkit-text-fill-color: white;
-        }
+    h1 {
+        text-align: center;
+        color: #00ff00;
+        margin-bottom: 30px;
+        font-weight: normal;
+        text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
+        letter-spacing: 3px;
+        font-size: 24px;
+    }
 
-        h3 {
-            color: #4a5568;
-            font-size: 16px;
-            margin-bottom: 15px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+    .badge {
+        background: rgba(0, 255, 0, 0.2);
+        color: #00ff00;
+        padding: 4px 12px;
+        border: 1px solid #00ff00;
+        border-radius: 0;
+        font-size: 10px;
+        font-weight: normal;
+        margin-left: 10px;
+        letter-spacing: 2px;
+    }
 
-        .key-container {
-            background: #f7fafc;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 25px;
-            border: 2px solid #e2e8f0;
-            transition: all 0.3s ease;
-        }
+    .section {
+        background: rgba(0, 20, 0, 0.3);
+        border: 1px solid #00ff00;
+        border-radius: 0;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.1);
+    }
 
-        .key-container:hover {
-            border-color: #667eea;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
-        }
+    h3 {
+        color: #00ff00;
+        margin-bottom: 15px;
+        font-size: 14px;
+        font-weight: normal;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        text-shadow: 0 0 5px #00ff00;
+    }
 
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+    h3::before {
+        content: '> ';
+        color: #00ff00;
+    }
 
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-        }
+    input[type="text"] {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #00ff00;
+        border-radius: 0;
+        font-size: 14px;
+        margin-bottom: 10px;
+        background: rgba(0, 0, 0, 0.5);
+        color: #00ff00;
+        font-family: 'Courier New', monospace;
+        box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
+    }
 
-        button:active {
-            transform: translateY(0);
-        }
+    input[type="text"]:focus {
+        outline: none;
+        border-color: #00ff00;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.5), inset 0 0 10px rgba(0, 255, 0, 0.2);
+    }
 
-        #publicKeyDisplay,
-        #privateKeyDisplay {
-            padding: 12px;
-            background: #f7fafc;
-            border-radius: 6px;
-            border: 1px solid #e2e8f0;
-            font-size: 11px;
-            color: #4a5568;
-            word-wrap: break-word;
-            word-break: break-all;
-            max-height: 150px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            line-height: 1.8;
-            min-height: 100px;
-        }
+    input[type="text"]::placeholder {
+        color: rgba(0, 255, 0, 0.5);
+    }
 
-        #publicKeyDisplay:empty,
-        #privateKeyDisplay:empty {
-            display: none;
-        }
+    button {
+        background: rgba(0, 0, 0, 0.7);
+        color: #00ff00;
+        border: 1px solid #00ff00;
+        padding: 12px 24px;
+        border-radius: 0;
+        font-size: 14px;
+        font-weight: normal;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-family: 'Courier New', monospace;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+    }
 
-        .keys-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 20px;
-        }
+    button:hover {
+        background: rgba(0, 255, 0, 0.2);
+        box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+        text-shadow: 0 0 5px #00ff00;
+    }
 
-        .key-box {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            border: 2px solid #e2e8f0;
-            transition: all 0.3s ease;
-        }
+    button:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
 
-        .key-box:hover {
-            border-color: #667eea;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
-        }
+    #chatbox {
+        height: 400px;
+        overflow-y: auto;
+        border: 1px solid #00ff00;
+        border-radius: 0;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        margin-bottom: 15px;
+        font-family: 'Courier New', monospace;
+        box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.1);
+    }
 
-        .key-box h4 {
-            color: #667eea;
-            font-size: 13px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+    #chatbox::-webkit-scrollbar {
+        width: 10px;
+    }
 
-        @media (max-width: 768px) {
-            .keys-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+    #chatbox::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid #00ff00;
+    }
 
-        #publicKeyDisplay::-webkit-scrollbar,
-        #privateKeyDisplay::-webkit-scrollbar {
-            width: 8px;
-        }
+    #chatbox::-webkit-scrollbar-thumb {
+        background: rgba(0, 255, 0, 0.5);
+        border: 1px solid #00ff00;
+    }
 
-        #publicKeyDisplay::-webkit-scrollbar-track,
-        #privateKeyDisplay::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
+    .message {
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 0;
+        max-width: 70%;
+        word-wrap: break-word;
+        font-size: 13px;
+        border: 1px solid;
+        position: relative;
+    }
 
-        #publicKeyDisplay::-webkit-scrollbar-thumb,
-        #privateKeyDisplay::-webkit-scrollbar-thumb {
-            background: #667eea;
-            border-radius: 4px;
-        }
+    .message::before {
+        font-size: 10px;
+        opacity: 0.7;
+        display: block;
+        margin-bottom: 5px;
+    }
 
+    .message.sent {
+        background: rgba(0, 100, 0, 0.3);
+        color: #00ff00;
+        margin-left: auto;
+        border-color: #00ff00;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+    }
 
+    .message.sent::before {
+        content: '[ENCRYPTED_SENT]';
+    }
 
-        input[type="text"] {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            background: white;
-            color: #2d3748;
-        }
+    .message.received {
+        background: rgba(0, 50, 0, 0.2);
+        color: #00ff00;
+        border-color: #00aa00;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+    }
 
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
+    .message.received::before {
+        content: '[ENCRYPTED_RECV]';
+    }
 
-        #chatbox {
-            width: 100%;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
-            height: 400px;
-            overflow-y: auto;
-            margin-bottom: 20px;
-            background: white;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
+    .status {
+        padding: 10px;
+        border-radius: 0;
+        margin-bottom: 15px;
+        font-size: 12px;
+        border: 1px solid;
+        font-family: 'Courier New', monospace;
+    }
 
-        #chatbox::-webkit-scrollbar {
-            width: 10px;
-        }
+    .status.success {
+        background: rgba(0, 255, 0, 0.1);
+        color: #00ff00;
+        border-color: #00ff00;
+    }
 
-        #chatbox::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 5px;
-        }
+    .status.error {
+        background: rgba(255, 0, 0, 0.1);
+        color: #ff0000;
+        border-color: #ff0000;
+        text-shadow: 0 0 5px #ff0000;
+    }
 
-        #chatbox::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 5px;
-        }
+    .status.info {
+        background: rgba(0, 200, 255, 0.1);
+        color: #00ccff;
+        border-color: #00ccff;
+    }
 
-        .chat-input-container {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            margin-bottom: 25px;
-        }
+    #logDisplay {
+        max-height: 150px;
+        overflow-y: auto;
+        background: rgba(0, 0, 0, 0.7);
+        border: 1px solid #00ff00;
+        border-radius: 0;
+        padding: 15px;
+        font-size: 11px;
+        font-family: 'Courier New', monospace;
+        color: #00ff00;
+        box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.1);
+    }
 
-        #messageInput {
-            flex: 1;
-            margin: 0;
-        }
+    #logDisplay::-webkit-scrollbar {
+        width: 8px;
+    }
 
-        #sendButton {
-            padding: 12px 24px;
-            white-space: nowrap;
-        }
+    #logDisplay::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.5);
+    }
 
-        .message {
-            padding: 12px 16px;
-            margin: 8px 0;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-align: left;
-            max-width: 80%;
-            word-wrap: break-word;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-            animation: slideIn 0.3s ease;
-        }
+    #logDisplay::-webkit-scrollbar-thumb {
+        background: rgba(0, 255, 0, 0.5);
+        border: 1px solid #00ff00;
+    }
 
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+    #logDisplay div {
+        padding: 2px 0;
+        opacity: 0.8;
+    }
 
-        #logDisplay {
-            max-height: 150px;
-            overflow-y: auto;
-            border: 2px solid #e2e8f0;
-            padding: 15px;
-            background: #f7fafc;
-            border-radius: 12px;
-            font-size: 12px;
-            color: #4a5568;
-            font-family: 'Courier New', monospace;
-        }
+    #logDisplay div::before {
+        content: '$ ';
+        color: #00ff00;
+        opacity: 0.5;
+    }
 
-        #logDisplay::-webkit-scrollbar {
-            width: 8px;
-        }
+    .hidden {
+        display: none;
+    }
 
-        #logDisplay::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
+    #logoutButton {
+        background: rgba(100, 0, 0, 0.5);
+        border-color: #ff0000;
+        color: #ff0000;
+        padding: 8px 16px;
+    }
 
-        #logDisplay::-webkit-scrollbar-thumb {
-            background: #667eea;
-            border-radius: 4px;
-        }
+    #logoutButton:hover {
+        background: rgba(255, 0, 0, 0.2);
+        box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+        text-shadow: 0 0 5px #ff0000;
+    }
 
-        #logDisplay div {
-            padding: 4px 0;
-            border-bottom: 1px solid #e2e8f0;
-        }
+    .user-info {
+        background: rgba(0, 20, 0, 0.5);
+        padding: 15px;
+        border-radius: 0;
+        margin-bottom: 15px;
+        border: 1px solid #00ff00;
+        font-size: 12px;
+        box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.1);
+    }
 
-        #logDisplay div:last-child {
-            border-bottom: none;
-        }
+    .user-info div {
+        margin: 5px 0;
+    }
 
-        .log-header {
-            background: #f7fafc;
-            border-radius: 12px;
-            padding: 15px 20px;
-            margin-bottom: 10px;
-            border: 2px solid #e2e8f0;
-        }
+    .user-info strong {
+        color: #00aa00;
+        text-transform: uppercase;
+        font-size: 10px;
+        letter-spacing: 1px;
+    }
 
-        .log-header h3 {
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+    #currentUsername {
+        color: #00ff00 !important;
+        font-weight: bold !important;
+        text-shadow: 0 0 5px #00ff00;
+    }
 
-        .log-header h3::before {
-            content: "📊";
-            font-size: 18px;
-        }
+    #currentUserId {
+        font-size: 11px !important;
+        color: rgba(0, 255, 0, 0.7) !important;
+        font-family: 'Courier New', monospace;
+    }
 
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-            }
+    /* Footer */
+    .footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(10, 14, 39, 0.95);
+        border-top: 1px solid #00ff00;
+        padding: 15px 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #00ff00;
+        box-shadow: 0 -5px 20px rgba(0, 255, 0, 0.2);
+        z-index: 1000;
+    }
 
-            h2 {
-                font-size: 22px;
-            }
+    .footer a {
+        color: #00ff00;
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: all 0.3s;
+    }
 
-            .chat-input-container {
-                flex-direction: column;
-            }
+    .footer a:hover {
+        border-bottom-color: #00ff00;
+        text-shadow: 0 0 5px #00ff00;
+    }
 
-            #sendButton {
-                width: 100%;
-            }
-        }
+    .privacy-notice {
+        background: rgba(0, 20, 0, 0.5);
+        border: 1px solid #00ff00;
+        padding: 15px;
+        margin-bottom: 20px;
+        font-size: 11px;
+        line-height: 1.6;
+    }
 
+    .privacy-notice strong {
+        color: #00ff00;
+        text-shadow: 0 0 3px #00ff00;
+    }
 
-    </style>
+    /* Glitch effect for title */
+    @keyframes glitch {
+        0% { text-shadow: 0 0 10px #00ff00; }
+        25% { text-shadow: -2px 0 10px #00ff00, 2px 0 10px #00ff00; }
+        50% { text-shadow: 0 0 10px #00ff00; }
+        75% { text-shadow: 2px 0 10px #00ff00, -2px 0 10px #00ff00; }
+        100% { text-shadow: 0 0 10px #00ff00; }
+    }
+
+    h1 {
+        animation: glitch 3s infinite;
+    }
+
+    /* Scanline effect */
+    .container::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+            to bottom,
+            transparent 50%,
+            rgba(0, 255, 0, 0.02) 50%
+        );
+        background-size: 100% 4px;
+        pointer-events: none;
+        z-index: 1000;
+    }
+</style>
 </head>
 <body>
 
 <div class="container">
-    <h2>
-        Secure Chat Application 
-        <span class="encryption-badge">E2E</span>
-        <span class="encryption-badge">RSA</span>
-    </h2>
+    <h1>
+        🔐 Signal Protocol E2E Chat
+        <span class="badge">SIGNAL PROTOCOL</span>
+        <span class="badge">CURVE25519</span>
+    </h1>
 
-    <div class="key-container">
-        <h3>🔑 Generate Key Pair</h3>
-        <button id="generateKeysButton">Generate Keys</button>
-        <div class="keys-grid">
-            <div class="key-box">
-                <h4>Public Key</h4>
-                <div id="publicKeyDisplay"></div>
-            </div>
-            <div class="key-box">
-                <h4>Private Key</h4>
-                <div id="privateKeyDisplay"></div>
-            </div>
+    <!-- Privacy Notice -->
+    <div class="privacy-notice">
+        <strong>🔒 Privacy & Security:</strong> This is a demonstration application showcasing end-to-end encryption using the Signal Protocol. All cryptographic keys are generated client-side and stored in your browser's localStorage. Private keys <strong>never</strong> leave your device. The server cannot decrypt your messages. For demo purposes only - do not use for sensitive communications. No message history is stored. Keys are deleted when you logout or clear browser data.
+    </div>
+
+    <!-- Registration Section -->
+    <div id="registrationSection" class="section">
+        <h3>👤 User Registration</h3>
+        <input type="text" id="usernameInput" placeholder="Enter your username (3-20 chars, alphanumeric)" maxlength="20" />
+        <button id="registerButton">Register & Generate Keys</button>
+        <div id="statusMessage"></div>
+    </div>
+
+    <!-- Chat Section (Hidden until registered) -->
+    <div id="chatSection" class="section hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0;">💬 Chat</h3>
+            <button id="logoutButton">🚪 Logout</button>
+        </div>
+        
+        <div class="user-info">
+            <div><strong>Logged in as:</strong> <span id="currentUsername"></span></div>
+            <div><strong>Your User ID:</strong> <span id="currentUserId"></span></div>
+        </div>
+        
+        <input type="text" id="recipientIdInput" placeholder="Enter recipient's User ID" />
+        <button id="connectButton">Connect to Recipient</button>
+        <div id="chatStatus"></div>
+        
+        <div id="chatbox"></div>
+        
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="messageInput" placeholder="Type your message and press Enter..." style="flex: 1;" />
+            <button id="sendButton">Send Encrypted</button>
         </div>
     </div>
 
-    <div class="key-container">
-        <h3>👤 Public Key for Encryption</h3>
-        <input type="text" id="recipientPublicKey" placeholder="Enter recipient's public key here..." />
+    <!-- Logs -->
+    <div class="section">
+        <h3>📊 System Logs</h3>
+        <div id="logDisplay"></div>
     </div>
-
-    <div id="chatbox"></div>
-    
-    <div class="chat-input-container">
-        <input type="text" id="messageInput" placeholder="Type your encrypted message..." />
-        <button id="sendButton">Send</button>
-    </div>
-
-    <div class="log-header">
-        <h3>System Logs</h3>
-    </div>
-    <div id="logDisplay"></div>
 </div>
 
+<!-- Footer -->
+<div class="footer">
+    <div style="margin-bottom: 5px;">
+        <strong>Cryptologic</strong> © 2026 | End-to-End Encrypted Chat
+    </div>
+    <div style="font-size: 10px; opacity: 0.7;">
+        Built with Signal Protocol · Spring Boot · Redis · WebSocket
+    </div>
+</div>
+
+<script src="/js/libsignal-protocol.js"></script>
 <script src="https://cdn.jsdelivr.net/sockjs/1.1.4/sockjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.0.0/jsencrypt.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
 <script>
-    const socket = new SockJS('/chat-websocket');
-    const stompClient = Stomp.over(socket);
+// ==================== GLOBAL VARIABLES ====================
+let currentUserId = null;
+let currentUsername = null;
+let recipientId = null;
+let stompClient = null;
 
-    const chatbox = document.getElementById('chatbox');
-    const messageInput = document.getElementById('messageInput');
-    const sendButton = document.getElementById('sendButton');
-    const recipientPublicKeyInput = document.getElementById('recipientPublicKey');
-    const publicKeyDisplay = document.getElementById('publicKeyDisplay');
-    const privateKeyDisplay = document.getElementById('privateKeyDisplay');
-    const logDisplay = document.getElementById('logDisplay');
+// Signal Protocol Store
+let store = null;
+let registrationId = null;
 
-    let privateKey;
-    let publicKey;
+// ==================== HELPER FUNCTIONS ====================
+function log(message) {
+    const logElement = document.getElementById('logDisplay');
+    const entry = document.createElement('div');
+    entry.innerText = `[${new Date().toLocaleTimeString()}] ${message}`;
+    logElement.appendChild(entry);
+    logElement.scrollTop = logElement.scrollHeight;
+}
 
-    // Log messages to the display
-    function log(message) {
-        const logElement = document.createElement('div');
-        logElement.innerText = message;
-        logDisplay.appendChild(logElement);
-        logDisplay.scrollTop = logDisplay.scrollHeight;
+function showStatus(elementId, message, type) {
+    const element = document.getElementById(elementId);
+    element.innerHTML = `<div class="status ${type}">${message}</div>`;
+}
+
+// ==================== SIGNAL PROTOCOL STORE ====================
+function SignalProtocolStore() {
+    this.store = {};
+}
+
+SignalProtocolStore.prototype = {
+    Direction: {
+        SENDING: 1,
+        RECEIVING: 2,
+    },
+
+    getIdentityKeyPair: function() {
+        return Promise.resolve(this.get('identityKey'));
+    },
+    
+    getLocalRegistrationId: function() {
+        return Promise.resolve(this.get('registrationId'));
+    },
+    
+    put: function(key, value) {
+        if (key === undefined || value === undefined || key === null || value === null)
+            throw new Error("Tried to store undefined/null");
+        this.store[key] = value;
+    },
+    
+    get: function(key, defaultValue) {
+        if (key === null || key === undefined)
+            throw new Error("Tried to get value for undefined/null key");
+        if (key in this.store) {
+            return this.store[key];
+        } else {
+            return defaultValue;
+        }
+    },
+    
+    remove: function(key) {
+        if (key === null || key === undefined)
+            throw new Error("Tried to remove value for undefined/null key");
+        delete this.store[key];
+    },
+
+    isTrustedIdentity: function(identifier, identityKey, direction) {
+        if (identifier === null || identifier === undefined) {
+            throw new Error("tried to check identity key for undefined/null key");
+        }
+        if (!(identityKey instanceof ArrayBuffer)) {
+            throw new Error("Expected identityKey to be an ArrayBuffer");
+        }
+        var trusted = this.get('identityKey' + identifier);
+        if (trusted === undefined) {
+            return Promise.resolve(true);
+        }
+        return Promise.resolve(util.toString(identityKey) === util.toString(trusted));
+    },
+    
+    loadIdentityKey: function(identifier) {
+        if (identifier === null || identifier === undefined)
+            throw new Error("Tried to get identity key for undefined/null key");
+        return Promise.resolve(this.get('identityKey' + identifier));
+    },
+    
+    saveIdentity: function(identifier, identityKey) {
+        if (identifier === null || identifier === undefined)
+            throw new Error("Tried to put identity key for undefined/null key");
+        
+        var address = new libsignal.SignalProtocolAddress.fromString(identifier);
+        var existing = this.get('identityKey' + address.getName());
+        this.put('identityKey' + address.getName(), identityKey);
+
+        if (existing && util.toString(identityKey) !== util.toString(existing)) {
+            return Promise.resolve(true);
+        } else {
+            return Promise.resolve(false);
+        }
+    },
+
+    loadPreKey: function(keyId) {
+        var res = this.get('25519KeypreKey' + keyId);
+        if (res !== undefined) {
+            return Promise.resolve({pubKey: res.pubKey, privKey: res.privKey});
+        }
+        return Promise.resolve(undefined);
+    },
+    
+    storePreKey: function(keyId, keyPair) {
+        return Promise.resolve(this.put('25519KeypreKey' + keyId, keyPair));
+    },
+    
+    removePreKey: function(keyId) {
+        return Promise.resolve(this.remove('25519KeypreKey' + keyId));
+    },
+
+    loadSignedPreKey: function(keyId) {
+        var res = this.get('25519KeysignedKey' + keyId);
+        if (res !== undefined) {
+            return Promise.resolve({pubKey: res.pubKey, privKey: res.privKey});
+        }
+        return Promise.resolve(undefined);
+    },
+    
+    storeSignedPreKey: function(keyId, keyPair) {
+        return Promise.resolve(this.put('25519KeysignedKey' + keyId, keyPair));
+    },
+    
+    removeSignedPreKey: function(keyId) {
+        return Promise.resolve(this.remove('25519KeysignedKey' + keyId));
+    },
+
+    loadSession: function(identifier) {
+        return Promise.resolve(this.get('session' + identifier));
+    },
+    
+    storeSession: function(identifier, record) {
+        return Promise.resolve(this.put('session' + identifier, record));
+    },
+    
+    removeSession: function(identifier) {
+        return Promise.resolve(this.remove('session' + identifier));
+    },
+    
+    removeAllSessions: function(identifier) {
+        for (var id in this.store) {
+            if (id.startsWith('session' + identifier)) {
+                delete this.store[id];
+            }
+        }
+        return Promise.resolve();
     }
+};
 
-    // Generate public and private key pair
-    function generateKeys() {
-        const encryptor = new JSEncrypt();
-        encryptor.getKey();
-        publicKey = encryptor.getPublicKey();
-        privateKey = encryptor.getPrivateKey();
-        publicKeyDisplay.innerText = publicKey;
-        privateKeyDisplay.innerText = privateKey;
-        log(`Generated keys.`);
-    }
-
-    document.getElementById('generateKeysButton').onclick = () => generateKeys();
-
-    // Automatically connect to the server
-    stompClient.connect({}, function (frame) {
-        log('Connected: ' + frame);
-
-        // Subscribe to messages
-        stompClient.subscribe('/topic/public', function (chatMessage) {
-            const message = JSON.parse(chatMessage.body);
-            const decryptedMessage = decryptMessage(message.content);
-            displayMessage(decryptedMessage);
-            log(`Received message: ${decryptedMessage}`);
-        });
-    });
-
-    // Send encrypted message
-    sendButton.onclick = () => {
-        const messageContent = messageInput.value;
-        const recipientPublicKey = recipientPublicKeyInput.value;
-
-        if (!recipientPublicKey) {
-            log('Please enter a recipient public key.');
-            return;
+// Utility functions
+var util = {
+    toString: function(thing) {
+        if (typeof thing == 'string') {
+            return thing;
+        }
+        return new dcodeIO.ByteBuffer.wrap(thing).toString('binary');
+    },
+    toArrayBuffer: function(thing) {
+        if (thing === undefined) {
+            return undefined;
+        }
+        if (thing === Object(thing)) {
+            if (thing instanceof ArrayBuffer) {
+                return thing;
+            }
         }
 
-        const encryptedMessage = encryptMessage(messageContent, recipientPublicKey);
-        sendMessage(encryptedMessage);
-        log(`Sent encrypted message: ${encryptedMessage}`);
-        messageInput.value = '';
-    };
+        var str;
+        if (typeof thing == "string") {
+            str = thing;
+        } else {
+            throw new Error("Tried to convert a non-string of type " + typeof thing);
+        }
+        var buf = new ArrayBuffer(str.length);
+        var bufView = new Uint8Array(buf);
+        for (var i=0; i<str.length; i++) {
+            bufView[i] = str.charCodeAt(i);
+        }
+        return buf;
+    }
+};
 
-    // Display message in the chatbox
-    function displayMessage(messageContent) {
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('message');
-        messageElement.innerText = messageContent;
-        chatbox.appendChild(messageElement);
-        chatbox.scrollTop = chatbox.scrollHeight;
+// ==================== AUTO-LOGIN ON PAGE LOAD ====================
+window.addEventListener('DOMContentLoaded', () => {
+    const savedUserId = localStorage.getItem('currentUserId');
+    const savedUsername = localStorage.getItem('currentUsername');
+    const savedStore = localStorage.getItem('signalStore_' + savedUserId);
+    
+    if (savedUserId && savedUsername && savedStore) {
+        // Auto-login
+        log('🔄 Auto-login detected...');
+        
+        currentUserId = savedUserId;
+        currentUsername = savedUsername;
+        
+        // Restore Signal Protocol Store
+        store = new SignalProtocolStore();
+        store.store = JSON.parse(savedStore);
+        
+        // Restore registrationId
+        registrationId = store.get('registrationId');
+        
+        // Hide registration, show chat
+        document.getElementById('registrationSection').classList.add('hidden');
+        document.getElementById('chatSection').classList.remove('hidden');
+        document.getElementById('currentUserId').innerText = currentUserId;
+        document.getElementById('currentUsername').innerText = currentUsername;
+        
+        log(`✅ Auto-logged in as ${currentUsername} (${currentUserId})`);
+        log('🔐 Keys restored from localStorage');
+    } else {
+        log('👋 Welcome! Please register to start chatting.');
+    }
+});
+
+// ==================== ENTER KEY HANDLERS ====================
+// Registration - Enter key
+document.getElementById('usernameInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('registerButton').click();
+    }
+});
+
+// Recipient ID - Enter key
+document.getElementById('recipientIdInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('connectButton').click();
+    }
+});
+
+// Message - Enter key
+document.getElementById('messageInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('sendButton').click();
+    }
+});
+
+// ==================== REGISTER USER ====================
+document.getElementById('registerButton').addEventListener('click', async () => {
+    const username = document.getElementById('usernameInput').value.trim();
+    
+    if (!username) {
+        showStatus('statusMessage', 'Please enter a username', 'error');
+        return;
     }
 
-    // Send message to the server
-    function sendMessage(content) {
-        stompClient.send("/app/chat", {}, JSON.stringify({ content }));
+    if (username.length < 3) {
+        showStatus('statusMessage', 'Username must be at least 3 characters', 'error');
+        return;
     }
 
-    // Encrypt message with the recipient's public key
-    function encryptMessage(message, recipientPublicKey) {
-        const encryptor = new JSEncrypt();
-        encryptor.setPublicKey(recipientPublicKey);
-        const encrypted = encryptor.encrypt(message);
-        return encrypted || message;  // If encryption fails, return the original
+    if (username.length > 20) {
+        showStatus('statusMessage', 'Username must be at most 20 characters', 'error');
+        return;
     }
 
-    // Decrypt message with the private key
-    function decryptMessage(encryptedMessage) {
-        const decryptor = new JSEncrypt();
-        decryptor.setPrivateKey(privateKey);
-        const decrypted = decryptor.decrypt(encryptedMessage);
-        return decrypted || 'Decryption failed';
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        showStatus('statusMessage', 'Username can only contain letters, numbers, and underscores', 'error');
+        return;
     }
+
+    try {
+        showStatus('statusMessage', 'Registering...', 'info');
+        log('Starting registration...');
+
+        // 1. Register with backend
+        const response = await fetch('/api/users/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Registration failed');
+        }
+
+        const userData = await response.json();
+        currentUserId = userData.userId;
+        currentUsername = userData.username;
+        registrationId = userData.registrationId;
+
+        log(`✅ User registered: ${username} (${currentUserId})`);
+
+        // 2. Initialize Signal Protocol Store
+        store = new SignalProtocolStore();
+        
+        // 3. Generate Identity Key Pair
+        log('🔐 Generating Identity Key Pair...');
+        const identityKeyPair = await libsignal.KeyHelper.generateIdentityKeyPair();
+        store.put('identityKey', identityKeyPair);
+        store.put('registrationId', registrationId);
+        log('✅ Identity Key generated');
+
+        // 4. Generate Signed PreKey
+        log('🔐 Generating Signed PreKey...');
+        const signedPreKeyId = Math.floor(Math.random() * 16777215);
+        const signedPreKey = await libsignal.KeyHelper.generateSignedPreKey(identityKeyPair, signedPreKeyId);
+        store.put('25519KeysignedKey' + signedPreKeyId, signedPreKey.keyPair);
+        log('✅ Signed PreKey generated');
+
+        // 5. Generate PreKey
+        log('🔐 Generating PreKey...');
+        const startPreKeyId = Math.floor(Math.random() * 1000);
+        const preKeys = await libsignal.KeyHelper.generatePreKey(startPreKeyId);
+        store.put('25519KeypreKey' + startPreKeyId, preKeys.keyPair);
+        log('✅ PreKey generated');
+
+        // 6. Create PreKeyBundle
+        const preKeyBundle = {
+            registrationId: registrationId,
+            identityKey: btoa(String.fromCharCode.apply(null, new Uint8Array(identityKeyPair.pubKey))),
+            signedPreKey: {
+                keyId: signedPreKeyId,
+                publicKey: btoa(String.fromCharCode.apply(null, new Uint8Array(signedPreKey.keyPair.pubKey))),
+                signature: btoa(String.fromCharCode.apply(null, new Uint8Array(signedPreKey.signature)))
+            },
+            preKey: {
+                keyId: startPreKeyId,
+                publicKey: btoa(String.fromCharCode.apply(null, new Uint8Array(preKeys.keyPair.pubKey)))
+            }
+        };
+
+        // 7. Upload PreKeyBundle
+        log('📤 Uploading PreKeyBundle...');
+        const uploadResponse = await fetch(`/api/keys/${currentUserId}/upload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(preKeyBundle)
+        });
+
+        if (!uploadResponse.ok) {
+            throw new Error('Failed to upload PreKeyBundle');
+        }
+
+        log('✅ PreKeyBundle uploaded');
+
+        // 8. Save to localStorage
+        localStorage.setItem('signalStore_' + currentUserId, JSON.stringify(store.store));
+        localStorage.setItem('currentUserId', currentUserId);
+        localStorage.setItem('currentUsername', currentUsername);
+        log('💾 Keys saved to localStorage');
+
+        showStatus('statusMessage', `✅ Registered successfully!`, 'success');
+        
+        // Show chat
+        document.getElementById('registrationSection').classList.add('hidden');
+        document.getElementById('chatSection').classList.remove('hidden');
+        document.getElementById('currentUserId').innerText = currentUserId;
+        document.getElementById('currentUsername').innerText = currentUsername;
+        
+        log('🔐 TRUE E2E Encryption ready!');
+        
+    } catch (error) {
+        console.error('Registration error:', error);
+        log('❌ Registration failed: ' + error.message);
+        showStatus('statusMessage', 'Error: ' + error.message, 'error');
+    }
+});
+
+// ==================== LOGOUT ====================
+document.getElementById('logoutButton').addEventListener('click', () => {
+    if (confirm('Logout? Your keys will be cleared from this browser.')) {
+        log('🚪 Logging out...');
+        localStorage.clear();
+        log('✅ Logged out');
+        location.reload();
+    }
+});
+
+// ==================== CONNECT ====================
+document.getElementById('connectButton').addEventListener('click', async () => {
+    recipientId = document.getElementById('recipientIdInput').value.trim();
+    
+    if (!recipientId) {
+        showStatus('chatStatus', 'Please enter recipient User ID', 'error');
+        return;
+    }
+
+    try {
+        showStatus('chatStatus', 'Connecting...', 'info');
+        log(`Connecting to: ${recipientId}`);
+
+        const response = await fetch(`/api/keys/${recipientId}/bundle`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to get keys');
+        }
+
+        const bundle = await response.json();
+        log('✅ PreKeyBundle received');
+        
+        const recipientPreKeyBundle = {
+            registrationId: bundle.registrationId,
+            identityKey: util.toArrayBuffer(atob(bundle.identityKey)),
+            signedPreKey: {
+                keyId: bundle.signedPreKey.keyId,
+                publicKey: util.toArrayBuffer(atob(bundle.signedPreKey.publicKey)),
+                signature: util.toArrayBuffer(atob(bundle.signedPreKey.signature))
+            },
+            preKey: bundle.preKey ? {
+                keyId: bundle.preKey.keyId,
+                publicKey: util.toArrayBuffer(atob(bundle.preKey.publicKey))
+            } : undefined
+        };
+        
+        const address = new libsignal.SignalProtocolAddress(recipientId, 1);
+        const sessionBuilder = new libsignal.SessionBuilder(store, address);
+        
+        log('🔐 Building session...');
+        await sessionBuilder.processPreKey(recipientPreKeyBundle);
+        log('✅ Session established!');
+        
+        initWebSocket();
+        
+        showStatus('chatStatus', `✅ Connected! E2E encrypted.`, 'success');
+        
+    } catch (error) {
+        console.error('Connection error:', error);
+        log('❌ Failed: ' + error.message);
+        showStatus('chatStatus', 'Error: ' + error.message, 'error');
+    }
+});
+
+// ==================== WEBSOCKET ====================
+function initWebSocket() {
+    const socket = new SockJS('/chat-websocket');
+    stompClient = Stomp.over(socket);
+    
+    stompClient.connect({}, (frame) => {
+        log('✅ WebSocket connected');
+        
+        stompClient.subscribe(`/topic/user/${currentUserId}`, (message) => {
+            const encryptedMsg = JSON.parse(message.body);
+            handleIncomingMessage(encryptedMsg);
+        });
+    });
+}
+
+// ==================== SEND ====================
+document.getElementById('sendButton').addEventListener('click', async () => {
+    const plaintext = document.getElementById('messageInput').value.trim();
+    
+    if (!plaintext || !recipientId) {
+        log('⚠️ Missing recipient or message');
+        return;
+    }
+
+    try {
+        log(`🔒 Encrypting: "${plaintext}"`);
+        
+        const address = new libsignal.SignalProtocolAddress(recipientId, 1);
+        const hasSession = await store.loadSession(address.toString());
+        
+        if (!hasSession) {
+            log('❌ No session! Connect first.');
+            alert('Please connect to recipient first!');
+            return;
+        }
+        
+        const sessionCipher = new libsignal.SessionCipher(store, address);
+        const ciphertext = await sessionCipher.encrypt(util.toArrayBuffer(plaintext));
+        
+        let bodyBase64;
+        if (typeof ciphertext.body === 'string') {
+            bodyBase64 = btoa(ciphertext.body);
+        } else {
+            const bodyBytes = new Uint8Array(ciphertext.body);
+            let binary = '';
+            for (let i = 0; i < bodyBytes.length; i++) {
+                binary += String.fromCharCode(bodyBytes[i]);
+            }
+            bodyBase64 = btoa(binary);
+        }
+        
+        const encryptedMsg = {
+            senderId: currentUserId,
+            recipientId: recipientId,
+            type: ciphertext.type === 3 ? 'PREKEY_MESSAGE' : 'SIGNAL_MESSAGE',
+            ciphertext: bodyBase64,
+            messageType: ciphertext.type,
+            senderDeviceId: 1,
+            recipientDeviceId: 1
+        };
+        
+        stompClient.send('/app/chat.send', {}, JSON.stringify(encryptedMsg));
+        
+        displayMessage(plaintext, 'sent');
+        document.getElementById('messageInput').value = '';
+        
+        log('✅ Sent!');
+        
+    } catch (error) {
+        console.error('Error:', error);
+        log('❌ Failed: ' + error.message);
+    }
+});
+
+// ==================== RECEIVE ====================
+async function handleIncomingMessage(encryptedMsg) {
+    try {
+        log('📨 Received encrypted message');
+        
+        const address = new libsignal.SignalProtocolAddress(
+            encryptedMsg.senderId, 
+            encryptedMsg.senderDeviceId || 1
+        );
+        const sessionCipher = new libsignal.SessionCipher(store, address);
+        
+        const ciphertextBinary = atob(encryptedMsg.ciphertext);
+        const ciphertextArray = new Uint8Array(ciphertextBinary.length);
+        for (let i = 0; i < ciphertextBinary.length; i++) {
+            ciphertextArray[i] = ciphertextBinary.charCodeAt(i);
+        }
+
+        let plaintext;
+        if (encryptedMsg.messageType === 3 || encryptedMsg.type === 'PREKEY_MESSAGE') {
+            plaintext = await sessionCipher.decryptPreKeyWhisperMessage(ciphertextArray.buffer, 'binary');
+        } else {
+            plaintext = await sessionCipher.decryptWhisperMessage(ciphertextArray.buffer, 'binary');
+        }
+        
+        const message = util.toString(plaintext);
+        displayMessage(message, 'received');
+        log('🔓 Decrypted');
+        
+    } catch (error) {
+        console.error('Decryption error:', error);
+        log('❌ Decryption failed: ' + error.message);
+        displayMessage('[Failed to decrypt]', 'received');
+    }
+}
+
+// ==================== DISPLAY ====================
+function displayMessage(text, type) {
+    const chatbox = document.getElementById('chatbox');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${type}`;
+    msgDiv.innerText = text;
+    chatbox.appendChild(msgDiv);
+    chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+// ==================== INIT ====================
+log('🚀 Signal Protocol E2E Chat Ready');
+log('🔐 Curve25519 · AES-256-CBC · HMAC-SHA256');
 </script>
 
 </body>

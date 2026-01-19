@@ -1,15 +1,13 @@
-# Βασικό image με Java 17
 FROM eclipse-temurin:17-jdk
 
-# Ορίζουμε το working directory μέσα στο container
 WORKDIR /app
 
-# Αντιγράφουμε όλα τα JARs από το Gradle build στον container
-# και μετονομάζουμε το πρώτο JAR σε crypto.jar
-COPY build/libs/*.jar /app/crypto.jar
+# Αντιγράφουμε όλα τα JARs στον φάκελο /app
+COPY build/libs/ /app/
 
-# Ανοίγουμε το port που τρέχει η Spring Boot app
+# Μετονομάζουμε το JAR σε crypto.jar μέσα στο container
+RUN mv /app/*.jar /app/crypto.jar
+
 EXPOSE 8080
 
-# Τρέχουμε το Spring Boot JAR
 ENTRYPOINT ["java", "-jar", "/app/crypto.jar"]

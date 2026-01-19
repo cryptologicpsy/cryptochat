@@ -13,23 +13,37 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      # 1️⃣ Checkout του repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2️⃣ Εμφάνιση εκδόσεων Docker
       - name: Show Docker version
         run: docker --version
 
       - name: Show Docker Compose version
         run: docker-compose --version
 
+      # 3️⃣ Gradle build για να φτιαχτεί το JAR
       - name: Build with Gradle
         run: ./gradlew clean build
 
+      # 4️⃣ Χτίσιμο Docker images
+      - name: Build Docker images
+        run: docker-compose build
+
+      # 5️⃣ Σταμάτημα παλιών containers (αν υπάρχουν)
       - name: Stop old containers
         run: docker-compose down
 
-      - name: Build and start containers
-        run: docker-compose up -d --build
+      # 6️⃣ Εκκίνηση containers
+      - name: Start containers
+        run: docker-compose up -d
 
+      # 7️⃣ Έλεγχος τρεχόντων containers
       - name: Show running containers
         run: docker ps
+
+      # 8️⃣ Προαιρετικά: Δες logs για το cryptochat container
+      - name: Show cryptochat logs
+        run: docker logs crypto-chat-app --tail=50

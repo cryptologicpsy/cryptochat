@@ -67,7 +67,7 @@ public class ProxyController {
 
         HttpEntity<Object> entity = new HttpEntity<>(body, headers);
 
-        // Χρησιμοποιούμε relative path για να μην έχουμε localhost
+        // Relative path, Spring Boot knows να κάνει resolve στον ίδιο server
         return restTemplate.exchange(path, HttpMethod.POST, entity, Map.class);
     }
 

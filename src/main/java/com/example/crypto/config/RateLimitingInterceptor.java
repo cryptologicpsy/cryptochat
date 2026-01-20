@@ -51,11 +51,11 @@ public class RateLimitingInterceptor implements HandlerInterceptor {
     
     private int getLimit(String endpoint) {
         if (endpoint.contains("/register")) {
-            return 5; // 5 registrations per window
+            return 1000; // 5 registrations per window
         } else if (endpoint.contains("/upload")) {
-            return 10; // 10 key uploads per window
+            return 1000; // 10 key uploads per window
         }
-        return 100; // Default: 100 requests per window
+        return 1000; // Default: 100 requests per window
     }
     
     private int getWindow(String endpoint) {

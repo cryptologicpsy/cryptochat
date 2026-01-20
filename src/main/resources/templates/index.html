@@ -743,7 +743,7 @@ document.getElementById('registerButton').addEventListener('click', async () => 
         log('Starting registration...');
 
         // 1. Register with backend
-        const response = await fetch('/api/users/register', {
+        const response = await fetch('/api/proxy/users/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username })
@@ -802,7 +802,7 @@ document.getElementById('registerButton').addEventListener('click', async () => 
 
         // 7. Upload PreKeyBundle
         log('📤 Uploading PreKeyBundle...');
-        const uploadResponse = await fetch(`/api/keys/${currentUserId}/upload`, {
+        const uploadResponse = await fetch(`/api/proxy/keys/${currentUserId}/upload`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(preKeyBundle)

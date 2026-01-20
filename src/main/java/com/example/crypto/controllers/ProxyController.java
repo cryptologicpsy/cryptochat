@@ -5,7 +5,6 @@ import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 @RestController
@@ -25,20 +24,19 @@ public class ProxyController {
     // ------------------- Users -------------------
 
     @PostMapping("/users/register")
-    public ResponseEntity<?> registerUser(@RequestBody Map<String, String> body, HttpServletRequest request) {
+    public ResponseEntity<?> registerUser(@RequestBody Map<String, String> body) {
         return forwardPost("/api/users/register", body);
     }
 
     @GetMapping("/users/{userId}")
-    public ResponseEntity<?> getUser(@PathVariable String userId, HttpServletRequest request) {
+    public ResponseEntity<?> getUser(@PathVariable String userId) {
         return forwardGet("/api/users/" + userId);
     }
 
     @PutMapping("/users/{userId}/online")
     public ResponseEntity<?> setOnlineStatus(
             @PathVariable String userId,
-            @RequestBody Map<String, Boolean> body,
-            HttpServletRequest request
+            @RequestBody Map<String, Boolean> body
     ) {
         return forwardPut("/api/users/" + userId + "/online", body);
     }
@@ -46,17 +44,17 @@ public class ProxyController {
     // ------------------- KeyBundles -------------------
 
     @PostMapping("/keys/{userId}/upload")
-    public ResponseEntity<?> uploadKey(@PathVariable String userId, @RequestBody Map<String, Object> body, HttpServletRequest request) {
+    public ResponseEntity<?> uploadKey(@PathVariable String userId, @RequestBody Map<String, Object> body) {
         return forwardPost("/api/keys/" + userId + "/upload", body);
     }
 
     @GetMapping("/keys/{userId}/bundle")
-    public ResponseEntity<?> getKey(@PathVariable String userId, HttpServletRequest request) {
+    public ResponseEntity<?> getKey(@PathVariable String userId) {
         return forwardGet("/api/keys/" + userId + "/bundle");
     }
 
     @DeleteMapping("/keys/{userId}/bundle")
-    public ResponseEntity<?> deleteKey(@PathVariable String userId, HttpServletRequest request) {
+    public ResponseEntity<?> deleteKey(@PathVariable String userId) {
         return forwardDelete("/api/keys/" + userId + "/bundle");
     }
 
@@ -69,7 +67,7 @@ public class ProxyController {
 
         HttpEntity<Object> entity = new HttpEntity<>(body, headers);
 
-        // Χρήση relative URL
+        // Χρησιμοποιούμε relative path για να μην έχουμε localhost
         return restTemplate.exchange(path, HttpMethod.POST, entity, Map.class);
     }
 

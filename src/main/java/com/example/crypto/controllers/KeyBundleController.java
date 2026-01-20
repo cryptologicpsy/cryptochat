@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/keys")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "https://chatapp.georgetzifkas.me")
 public class KeyBundleController {
 
     private final RedisTemplate<String, Object> redisTemplate;

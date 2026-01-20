@@ -165,26 +165,37 @@ forward secrecy at the message level, even within an established session.
 
 ## 🔬 API Endpoints
 
+All endpoints are routed through the **Proxy Controller** and are **lightly protected** with an internal API key.  
+- The frontend never knows the API key.  
+- Requests must go through `/api/proxy/...` to reach backend services.  
+- This provides **basic protection for demonstration purposes only**.  
+
 ### User Management
-```
-POST   /api/users/register          # Register new user
-GET    /api/users/{userId}          # Get user info
-PUT    /api/users/{userId}/online   # Update online status
-```
+| Method | Endpoint                      | Description                 |
+|--------|-------------------------------|-----------------------------|
+| POST   | `/api/proxy/users/register`    | Register a new user         |
+| GET    | `/api/proxy/users/{userId}`    | Fetch user information      |
+| PUT    | `/api/proxy/users/{userId}/online` | Update user online status |
 
 ### Key Management
-```
-POST   /api/keys/{userId}/upload    # Upload PreKeyBundle
-GET    /api/keys/{userId}/bundle    # Fetch PreKeyBundle
-DELETE /api/keys/{userId}/bundle    # Delete PreKeyBundle
-```
+| Method | Endpoint                         | Description                    |
+|--------|----------------------------------|--------------------------------|
+| POST   | `/api/proxy/keys/{userId}/upload` | Upload a user's PreKeyBundle   |
+| GET    | `/api/proxy/keys/{userId}/bundle` | Fetch a user's PreKeyBundle    |
+| DELETE | `/api/proxy/keys/{userId}/bundle` | Delete a user's PreKeyBundle   |
 
 ### Messaging (WebSocket)
-```
-CONNECT    /chat-websocket          # Establish WebSocket
-SUBSCRIBE  /topic/user/{userId}     # Listen for messages
-SEND       /app/chat.send            # Send encrypted message
-```
+| Method   | Endpoint                     | Description                         |
+|----------|------------------------------|-------------------------------------|
+| CONNECT  | `/chat-websocket`            | Establish WebSocket connection      |
+| SUBSCRIBE| `/topic/user/{userId}`       | Listen for incoming messages        |
+| SEND     | `/app/chat.send`             | Send encrypted message              |
+
+### 🔐 Light Security Notice
+- All `/api/proxy/...` endpoints are routed through a **proxy controller** that automatically adds a **secret API key**.
+- This prevents direct calls to the backend services.
+- Frontend never has access to the API key.
+- ⚠️ **Note:** This is a **light security measure for demo purposes only**. It is **not a replacement for full authentication or authorization** in production.
 
 ## 🧪 Testing
 

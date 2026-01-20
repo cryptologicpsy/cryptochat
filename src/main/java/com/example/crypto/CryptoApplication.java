@@ -16,5 +16,6 @@ public class CryptoApplication {
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }
+	
 
 }

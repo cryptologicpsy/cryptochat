@@ -161,7 +161,7 @@ forward secrecy at the message level, even within an established session.
 - ** Multi-Device** - Support multiple devices per user
 - ** Session Backup** - Encrypted session backup to server
 
-```
+
 
 ## 🔬 API Endpoints
 

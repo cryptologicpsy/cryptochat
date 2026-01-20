@@ -1,114 +1,52 @@
 package com.example.crypto.controllers;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/keys")
+@RequestMapping("/api/keys/proxy")
 @CrossOrigin(origins = "https://chatapp.georgetzifkas.me")
-public class KeyBundleController {
+public class KeyBundleProxyController {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final KeyBundleController keyBundleController;
 
-    // Rate limiting
-    private final Map<String, Long> lastRequestTime = new ConcurrentHashMap<>();
-    private static final long RATE_LIMIT_MS = 500;
+    @Value("${app.api.secret}")
+    private String apiSecret;
 
-    // Token TTL (seconds)
-    private static final long TOKEN_TTL = 30;
-
-    public KeyBundleController(RedisTemplate<String, Object> redisTemplate) {
-        this.redisTemplate = redisTemplate;
+    public KeyBundleProxyController(KeyBundleController keyBundleController) {
+        this.keyBundleController = keyBundleController;
     }
 
-    // ---------------- Helpers ----------------
-
-    private boolean checkRateLimit(HttpServletRequest request) {
-        String ip = request.getRemoteAddr();
-        long now = System.currentTimeMillis();
-        Long last = lastRequestTime.get(ip);
-        if (last != null && now - last < RATE_LIMIT_MS) return false;
-        lastRequestTime.put(ip, now);
-        return true;
-    }
-
-    private String bundleKey(String userId) {
-        return "prekey:bundle:" + userId;
-    }
-
-    private String tokenKey(String token) {
-        return "prekey:token:" + token;
-    }
-
-    // ---------------- Upload (protected) ----------------
+    // ------------------- Upload PreKeyBundle -------------------
     @PostMapping("/{userId}/upload")
-    public ResponseEntity<?> uploadBundle(
+    public ResponseEntity<?> uploadPreKeyBundle(
             @PathVariable String userId,
-            @RequestBody Map<String, Object> bundle,
+            @RequestBody Map<String, Object> body,
             HttpServletRequest request) {
 
-        if (!checkRateLimit(request))
-            return ResponseEntity.status(429).body(Map.of("error", "Too many requests"));
-
-        redisTemplate.opsForValue().set(bundleKey(userId), bundle, 30, TimeUnit.DAYS);
-
-        return ResponseEntity.ok(Map.of("message", "Uploaded"));
+        // Καλεί απευθείας τον KeyBundleController προσθέτοντας το secret token
+        return keyBundleController.uploadPreKeyBundle(userId, body, "Bearer " + apiSecret, request);
     }
 
-    // ---------------- Generate TEMP token ----------------
-    @GetMapping("/token/{userId}")
-    public ResponseEntity<?> generateToken(
-            @PathVariable String userId,
-            HttpServletRequest request) {
-
-        if (!checkRateLimit(request))
-            return ResponseEntity.status(429).body(Map.of("error", "Too many requests"));
-
-        String token = UUID.randomUUID().toString();
-
-        redisTemplate.opsForValue().set(
-                tokenKey(token),
-                userId,
-                TOKEN_TTL,
-                TimeUnit.SECONDS
-        );
-
-        return ResponseEntity.ok(Map.of(
-                "token", token,
-                "expiresIn", TOKEN_TTL
-        ));
-    }
-
-    // ---------------- Get Bundle (token protected) ----------------
+    // ------------------- Get PreKeyBundle -------------------
     @GetMapping("/{userId}/bundle")
-    public ResponseEntity<?> getBundle(
+    public ResponseEntity<?> getPreKeyBundle(
             @PathVariable String userId,
-            @RequestHeader(value = "X-PreKey-Token", required = false) String token,
             HttpServletRequest request) {
 
-        if (!checkRateLimit(request))
-            return ResponseEntity.status(429).body(Map.of("error", "Too many requests"));
+        return keyBundleController.getPreKeyBundle(userId, "Bearer " + apiSecret, request);
+    }
 
-        if (token == null)
-            return ResponseEntity.status(403).body(Map.of("error", "Missing token"));
+    // ------------------- Delete PreKeyBundle -------------------
+    @DeleteMapping("/{userId}/bundle")
+    public ResponseEntity<?> deletePreKeyBundle(
+            @PathVariable String userId,
+            HttpServletRequest request) {
 
-        Object tokenUser = redisTemplate.opsForValue().get(tokenKey(token));
-        if (tokenUser == null || !tokenUser.equals(userId))
-            return ResponseEntity.status(403).body(Map.of("error", "Invalid token"));
-
-        // one-time use
-        redisTemplate.delete(tokenKey(token));
-
-        Object bundle = redisTemplate.opsForValue().get(bundleKey(userId));
-        if (bundle == null)
-            return ResponseEntity.status(404).body(Map.of("error", "Not found"));
-
-        return ResponseEntity.ok(bundle);
+        return keyBundleController.deletePreKeyBundle(userId, "Bearer " + apiSecret, request);
     }
 }

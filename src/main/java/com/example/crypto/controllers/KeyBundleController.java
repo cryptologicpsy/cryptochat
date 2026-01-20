@@ -1,11 +1,13 @@
 package com.example.crypto.controllers;
 
-import com.example.crypto.models.PreKeyBundle;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -15,85 +17,99 @@ public class KeyBundleController {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-public KeyBundleController(RedisTemplate<String, Object> redisTemplate) {
-    this.redisTemplate = redisTemplate;
-}
+    @Value("${app.api.secret}")
+    private String apiSecret;
 
-    /**
-     * Upload PreKeyBundle from frontend
-     */
+    // Rate limiting per IP
+    private final Map<String, Long> lastRequestTime = new ConcurrentHashMap<>();
+    private final long RATE_LIMIT_MS = 500; // 0.5 sec
+
+    public KeyBundleController(RedisTemplate<String, Object> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
+
+    private boolean checkApiKey(String authHeader) {
+        return authHeader != null && authHeader.equals("Bearer " + apiSecret);
+    }
+
+    private boolean checkRateLimit(HttpServletRequest request) {
+        String ip = request.getRemoteAddr();
+        long now = System.currentTimeMillis();
+        Long last = lastRequestTime.get(ip);
+
+        if (last != null && (now - last) < RATE_LIMIT_MS) {
+            return false;
+        }
+
+        lastRequestTime.put(ip, now);
+        return true;
+    }
+
     @PostMapping("/{userId}/upload")
     public ResponseEntity<Map<String, Object>> uploadPreKeyBundle(
-            @PathVariable("userId") String userId,
-            @RequestBody Map<String, Object> bundle) {
-        
+            @PathVariable String userId,
+            @RequestBody Map<String, Object> bundle,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            HttpServletRequest request) {
+
+        if (!checkApiKey(authHeader)) return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
+        if (!checkRateLimit(request)) return ResponseEntity.status(429).body(Map.of("error", "Too many requests"));
+
         try {
-            // Store in Redis with 30 day expiration
             String key = "prekey:bundle:" + userId;
             redisTemplate.opsForValue().set(key, bundle, 30, TimeUnit.DAYS);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "PreKeyBundle uploaded successfully");
-            response.put("userId", userId);
-            
-            return ResponseEntity.ok(response);
-            
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "PreKeyBundle uploaded successfully",
+                    "userId", userId
+            ));
+
         } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("error", "Failed to upload PreKeyBundle: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest().body(Map.of("error", "Failed to upload PreKeyBundle: " + e.getMessage()));
         }
     }
 
-    /**
-     * Get PreKeyBundle for a user
-     */
     @GetMapping("/{userId}/bundle")
     public ResponseEntity<Map<String, Object>> getPreKeyBundle(
-            @PathVariable("userId") String userId) {
-        
+            @PathVariable String userId,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            HttpServletRequest request) {
+
+        if (!checkApiKey(authHeader)) return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
+        if (!checkRateLimit(request)) return ResponseEntity.status(429).body(Map.of("error", "Too many requests"));
+
         try {
             String key = "prekey:bundle:" + userId;
             Object bundle = redisTemplate.opsForValue().get(key);
-            
-            if (bundle == null) {
-                Map<String, Object> error = new HashMap<>();
-                error.put("error", "PreKeyBundle not found for user");
-                return ResponseEntity.notFound().build();
-            }
-            
+
+            if (bundle == null) return ResponseEntity.status(404).body(Map.of("error", "PreKeyBundle not found"));
+
             @SuppressWarnings("unchecked")
             Map<String, Object> bundleMap = (Map<String, Object>) bundle;
-            
             return ResponseEntity.ok(bundleMap);
-            
+
         } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("error", "Failed to retrieve PreKeyBundle: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest().body(Map.of("error", "Failed to retrieve PreKeyBundle: " + e.getMessage()));
         }
     }
 
-    /**
-     * Delete PreKeyBundle (for key rotation)
-     */
     @DeleteMapping("/{userId}/bundle")
     public ResponseEntity<Map<String, Object>> deletePreKeyBundle(
-            @PathVariable("userId") String userId) {
-        
+            @PathVariable String userId,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            HttpServletRequest request) {
+
+        if (!checkApiKey(authHeader)) return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
+        if (!checkRateLimit(request)) return ResponseEntity.status(429).body(Map.of("error", "Too many requests"));
+
         try {
             String key = "prekey:bundle:" + userId;
             redisTemplate.delete(key);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "PreKeyBundle deleted successfully");
-            
-            return ResponseEntity.ok(response);
-            
+
+            return ResponseEntity.ok(Map.of("message", "PreKeyBundle deleted successfully"));
+
         } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("error", "Failed to delete PreKeyBundle: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest().body(Map.of("error", "Failed to delete PreKeyBundle: " + e.getMessage()));
         }
     }
 }

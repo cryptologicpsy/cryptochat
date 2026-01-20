@@ -10,7 +10,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "https://chatapp.georgetzifkas.me")
 public class UserController {
 
     private final UserRepository userRepository;

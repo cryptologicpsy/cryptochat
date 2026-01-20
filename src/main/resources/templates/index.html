@@ -860,7 +860,7 @@ document.getElementById('connectButton').addEventListener('click', async () => {
         showStatus('chatStatus', 'Connecting...', 'info');
         log(`Connecting to: ${recipientId}`);
 
-        const response = await fetch(`/api/keys/${recipientId}/bundle`);
+        const response = await fetch(`/api/proxy/keys/${recipientId}/bundle`);
         
         if (!response.ok) {
             throw new Error('Failed to get keys');

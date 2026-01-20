@@ -10,4 +10,9 @@ public class CryptoApplication {
 		SpringApplication.run(CryptoApplication.class, args);
 	}
 
+	@Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
 }

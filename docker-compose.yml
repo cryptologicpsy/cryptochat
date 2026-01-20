@@ -17,7 +17,6 @@ services:
     networks:
       - crypto-network
 
-
   redis-commander:
     image: rediscommander/redis-commander:latest
     container_name: crypto-redis-commander
@@ -37,16 +36,14 @@ services:
     container_name: crypto-chat-app
     ports:
       - "10.0.0.1:8080:8080"
-      env_file:
+    env_file:
       - /opt/cryptochat/.env
     environment:
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
-     
     depends_on:
       redis:
         condition: service_healthy
-      
     restart: unless-stopped
     networks:
       - crypto-network
